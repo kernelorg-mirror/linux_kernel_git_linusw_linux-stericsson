@@ -16,5 +16,6 @@ config HSI_BOARDINFO
 
 source "drivers/hsi/clients/Kconfig"
 source "drivers/hsi/controllers/Kconfig"
+source "drivers/hsi/clients/Kconfig"
 
 endif # HSI
