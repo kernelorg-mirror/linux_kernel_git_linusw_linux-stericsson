@@ -12,14 +12,13 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
+#include <linux/platform_data/hsi-ux500.h>
 #include <linux/hsi/hsi.h>
 
 #ifdef CONFIG_STE_DMA40
 #include <linux/dmaengine.h>
 #include <linux/dma-mapping.h>
 #endif
-
-#include <mach/hsi.h>
 
 /**
  * struct ste_hsi_controller - Nomadik HSI controller data

@@ -17,6 +17,7 @@
 #include <linux/i2c.h>
 #include <linux/platform_data/i2c-nomadik.h>
 #include <linux/platform_data/db8500_thermal.h>
+#include <linux/hsi/hsi.h>
 #include <linux/gpio.h>
 #include <linux/amba/bus.h>
 #include <linux/amba/pl022.h>
@@ -373,6 +374,62 @@ static void __init mop500_i2c_init(struct device *parent)
 	db8500_add_i2c3(parent, NULL);
 }
 
+#ifdef CONFIG_HSI
+static struct hsi_board_info __initdata u8500_hsi_devices[] = {
+	{
+		.name = "hsi_char",
+		.hsi_id = 0,
+		.port = 0,
+		.tx_cfg = {
+			.mode = HSI_MODE_STREAM,
+			.channels = 2,
+			.speed = 100000,
+			{.arb_mode = HSI_ARB_RR},
+		},
+		.rx_cfg = {
+			.mode = HSI_MODE_STREAM,
+			.channels = 2,
+			.speed = 200000,
+			{.flow = HSI_FLOW_SYNC},
+		},
+	},
+	{
+		.name = "hsi_test",
+		.hsi_id = 0,
+		.port = 0,
+		.tx_cfg = {
+			.mode = HSI_MODE_FRAME,
+			.channels = 2,
+			.speed = 100000,
+			{.arb_mode = HSI_ARB_RR},
+		},
+		.rx_cfg = {
+			.mode = HSI_MODE_FRAME,
+			.channels = 2,
+			.speed = 200000,
+			{.flow = HSI_FLOW_SYNC},
+		},
+	},
+	{
+		.name = "cfhsi_v3_driver",
+		.hsi_id = 0,
+		.port = 0,
+		.tx_cfg = {
+			.mode = HSI_MODE_STREAM,
+			.channels = 2,
+			.speed = 20000,
+			{.arb_mode = HSI_ARB_RR},
+		},
+		.rx_cfg = {
+			.mode = HSI_MODE_STREAM,
+			.channels = 2,
+			.speed = 200000,
+			{.flow = HSI_FLOW_SYNC},
+		},
+	},
+};
+#endif
+
 static struct gpio_keys_button mop500_gpio_keys[] = {
 	{
 		.desc			= "SFH7741 Proximity Sensor",
@@ -448,6 +505,9 @@ static struct hash_platform_data u8500_hash1_platform_data = {
 /* add any platform devices here - TODO */
 static struct platform_device *mop500_platform_devs[] __initdata = {
 	&mop500_gpio_keys_device,
+#ifdef CONFIG_HSI
+	&u8500_hsi_device,
+#endif
 	&sdi0_regulator,
 };
 
@@ -597,6 +657,11 @@ static void __init mop500_init_machine(void)
 	mop500_uart_init(parent);
 	u8500_cryp1_hash1_init(parent);
 
+#ifdef CONFIG_HSI
+	hsi_register_board_info(u8500_hsi_devices,
+				ARRAY_SIZE(u8500_hsi_devices));
+#endif
+
 	/* This board has full regulator constraints */
 	regulator_has_full_constraints();
 }
@@ -663,6 +728,11 @@ static void __init hrefv60_init_machine(void)
 	mop500_spi_init(parent);
 	mop500_audio_init(parent);
 	mop500_uart_init(parent);
+
+#ifdef CONFIG_HSI
+	hsi_register_board_info(u8500_hsi_devices,
+				ARRAY_SIZE(u8500_hsi_devices));
+#endif
 
 	/* This board has full regulator constraints */
 	regulator_has_full_constraints();
