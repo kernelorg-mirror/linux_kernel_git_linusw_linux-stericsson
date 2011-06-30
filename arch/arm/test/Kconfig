@@ -1,0 +1,20 @@
+config ARM_TEST
+       bool "Enable ARM kernel tests"
+
+if ARM_TEST
+
+menu "ARM Kernel tests"
+
+comment "test code to exercise the ARM kernel"
+
+config ARM_TCM_TEST
+	bool "ARM TCM test"
+	depends on HAVE_TCM
+	help
+		Enables some test code snippets to exercise the TCM memory
+		on platforms that have it. The code will not be executed
+		if no TCM memory is found.
+
+endmenu
+
+endif

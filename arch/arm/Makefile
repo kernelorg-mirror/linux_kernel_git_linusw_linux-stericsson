@@ -292,6 +292,8 @@ core-y				+= $(machdirs) $(platdirs)
 core-				+= $(patsubst %,arch/arm/mach-%/, $(machine-))
 core-				+= $(patsubst %,arch/arm/plat-%/, $(plat-))
 
+core-$(CONFIG_ARM_TEST)		+= arch/arm/test/
+
 drivers-$(CONFIG_OPROFILE)      += arch/arm/oprofile/
 
 libs-y				:= arch/arm/lib/ $(libs-y)

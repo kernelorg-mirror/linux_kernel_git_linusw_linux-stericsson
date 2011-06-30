@@ -159,3 +159,6 @@ Example code::
 		tcm_free(tcmem, 20);
 	}
   }
+
+Example code can be found in the samples/arm_tcm directory of the kernel
+tree, and can be compiled in using menuconfig.
