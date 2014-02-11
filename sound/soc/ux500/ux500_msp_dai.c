@@ -649,9 +649,9 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 	int ret = 0;
 	struct ux500_msp_i2s_drvdata *drvdata = dev_get_drvdata(dai->dev);
 
-	dev_dbg(dai->dev, "%s: MSP %d (%s): Enter (msp->id = %d, cmd = %d).\n",
+	dev_dbg(dai->dev, "%s: MSP %d (%s): Enter (msp base = %p, cmd = %d).\n",
 		__func__, dai->id, snd_pcm_stream_str(substream),
-		(int)drvdata->msp->id, cmd);
+		drvdata->msp->registers, cmd);
 
 	ret = ux500_msp_i2s_trigger(drvdata->msp, cmd, substream->stream);
 
@@ -778,8 +778,8 @@ static int ux500_msp_drv_probe(struct platform_device *pdev)
 	ret = snd_soc_register_component(&pdev->dev, &ux500_msp_component,
 					 &ux500_msp_dai_drv, 1);
 	if (ret < 0) {
-		dev_err(&pdev->dev, "Error: %s: Failed to register MSP%d!\n",
-			__func__, drvdata->msp->id);
+		dev_err(&pdev->dev, "Error: %s: Failed to register MSP @ %p!\n",
+			__func__, drvdata->msp->registers);
 		return ret;
 	}
 
