@@ -28,6 +28,108 @@
 			linux,code = <0>; /* SW_LID */
 			label = "HED54XXU11 Hall Effect Sensor";
 		};
+
+		/* UGLY KEYS */
+		button@0 {
+			gpios = <&tvk_tc3589x_gpio 0 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-0";
+		};
+		button@1 {
+			gpios = <&tvk_tc3589x_gpio 1 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-1";
+		};
+		button@2 {
+			gpios = <&tvk_tc3589x_gpio 2 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-2";
+		};
+		button@3 {
+			gpios = <&tvk_tc3589x_gpio 3 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-3";
+		};
+		button@4 {
+			gpios = <&tvk_tc3589x_gpio 4 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-4";
+		};
+		button@5 {
+			gpios = <&tvk_tc3589x_gpio 5 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-5";
+		};
+		button@6 {
+			gpios = <&tvk_tc3589x_gpio 6 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-6";
+		};
+		button@7 {
+			gpios = <&tvk_tc3589x_gpio 7 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-7";
+		};
+		button@8 {
+			gpios = <&tvk_tc3589x_gpio 8 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-8";
+		};
+		button@9 {
+			gpios = <&tvk_tc3589x_gpio 9 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-9";
+		};
+		button@10 {
+			gpios = <&tvk_tc3589x_gpio 10 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-10";
+		};
+		button@11 {
+			gpios = <&tvk_tc3589x_gpio 11 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-11";
+		};
+		button@12 {
+			gpios = <&tvk_tc3589x_gpio 12 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-12";
+		};
+		button@13 {
+			gpios = <&tvk_tc3589x_gpio 13 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-13";
+		};
+		button@14 {
+			gpios = <&tvk_tc3589x_gpio 14 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-14";
+		};
+		button@15 {
+			gpios = <&tvk_tc3589x_gpio 15 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-15";
+		};
+		button@16 {
+			gpios = <&tvk_tc3589x_gpio 16 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-16";
+		};
+		button@17 {
+			gpios = <&tvk_tc3589x_gpio 17 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-17";
+		};
+		button@18 {
+			gpios = <&tvk_tc3589x_gpio 18 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-18";
+		};
+		button@19 {
+			gpios = <&tvk_tc3589x_gpio 19 0x4>;
+			linux,code = <57>;
+			label = "TC3589x-19";
+		};
 	};
 
 	soc {
@@ -43,7 +145,7 @@
 				interrupt-controller;
 				#interrupt-cells = <1>;
 
-				tc3589x_gpio {
+				tvk_tc3589x_gpio: tc3589x_gpio@0 {
 					compatible = "toshiba,tc3589x-gpio";
 					interrupts = <0>;
 
