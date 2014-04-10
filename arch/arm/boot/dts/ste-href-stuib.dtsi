@@ -26,6 +26,46 @@
 			linux,code = <0>; /* SW_LID */
 			label = "HED54XXU11 Hall Effect Sensor";
 		};
+		button@0 {
+			gpios = <&stmpe_gpio 0 0>;
+			linux,code = <11>;
+			label = "Test 0";
+		};
+		button@1 {
+			gpios = <&stmpe_gpio 1 0>;
+			linux,code = <11>;
+			label = "Test 1";
+		};
+		button@2 {
+			gpios = <&stmpe_gpio 2 0>;
+			linux,code = <11>;
+			label = "Test 2";
+		};
+		button@3 {
+			gpios = <&stmpe_gpio 3 0>;
+			linux,code = <11>;
+			label = "Test 3";
+		};
+		button@4 {
+			gpios = <&stmpe_gpio 4 0>;
+			linux,code = <11>;
+			label = "Test 4";
+		};
+		button@5 {
+			gpios = <&stmpe_gpio 5 0>;
+			linux,code = <11>;
+			label = "Test 5";
+		};
+		button@6 {
+			gpios = <&stmpe_gpio 6 0>;
+			linux,code = <11>;
+			label = "Test 6";
+		};
+		button@7 {
+			gpios = <&stmpe_gpio 7 0>;
+			linux,code = <11>;
+			label = "Test 7";
+		};
 	};
 
 	soc {
@@ -44,31 +84,12 @@
 				wakeup-source;
 				st,autosleep-timeout = <1024>;
 
-				stmpe_keypad {
-					compatible = "st,stmpe-keypad";
-
-					debounce-interval = <64>;
-					st,scan-count = <8>;
-					st,no-autorepeat;
-
-					linux,keymap = <0x205006b
-							0x4010074
-							0x3050072
-							0x1030004
-							0x502006a
-							0x500000a
-							0x5008b
-							0x706001c
-							0x405000b
-							0x6070003
-							0x3040067
-							0x303006c
-							0x60400e7
-							0x602009e
-							0x4020073
-							0x5050002
-							0x4030069
-							0x3020008>;
+				stmpe_gpio: stmpe_gpio@1 {
+					compatible = "st,stmpe-gpio";
+					interrupt-controller;
+					#interrupt-cells = <2>;
+					gpio-controller;
+					#gpio-cells = <2>;
 				};
 			};
 		};
