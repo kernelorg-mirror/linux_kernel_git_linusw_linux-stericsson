@@ -464,6 +464,16 @@
 			clocks = <&prcmu_clk PRCMU_DMACLK>;
 		};
 
+		/* Move in as a subnode of PRCMU */
+		mailbox@80157000 {
+  			compatible = "stericsson,db8500-mailbox";
+			reg = <0x80157000 0x1000>, <0x801B8000 0x2000>;
+			reg-names = "prcm-reg", "prcmu-tcdm";
+			interrupts = <0 47 0x4>;
+			interrupt-names = "irq";
+			legacy-offset = <0xdd4>;
+		};
+
 		prcmu: prcmu@80157000 {
 			compatible = "stericsson,db8500-prcmu";
 			reg = <0x80157000 0x2000>, <0x801b0000 0x8000>, <0x801b8000 0x1000>;
