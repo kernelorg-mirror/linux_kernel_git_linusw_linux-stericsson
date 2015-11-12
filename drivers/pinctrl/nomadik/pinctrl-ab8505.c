@@ -339,24 +339,6 @@ alternate_functions ab8505_alternate_functions[AB8505_GPIO_MAX_NUMBER + 1] = {
 	ALTERNATE_FUNCTIONS(53,	     4, UNUSED, UNUSED, 0, 0, 0), /* GPIO53, altA controlled by bit 4 */
 };
 
-/*
- * For AB8505 Only some GPIOs are interrupt capable, and they are
- * organized in discontiguous clusters:
- *
- *	GPIO10 to GPIO11
- *	GPIO13
- *	GPIO40 and GPIO41
- *	GPIO50
- *	GPIO52 to GPIO53
- */
-static struct abx500_gpio_irq_cluster ab8505_gpio_irq_cluster[] = {
-	GPIO_IRQ_CLUSTER(10, 11, AB8500_INT_GPIO10R),
-	GPIO_IRQ_CLUSTER(13, 13, AB8500_INT_GPIO13R),
-	GPIO_IRQ_CLUSTER(40, 41, AB8500_INT_GPIO40R),
-	GPIO_IRQ_CLUSTER(50, 50, AB9540_INT_GPIO50R),
-	GPIO_IRQ_CLUSTER(52, 53, AB9540_INT_GPIO52R),
-};
-
 static struct abx500_pinctrl_soc_data ab8505_soc = {
 	.gpio_ranges = ab8505_pinranges,
 	.gpio_num_ranges = ARRAY_SIZE(ab8505_pinranges),
@@ -367,11 +349,6 @@ static struct abx500_pinctrl_soc_data ab8505_soc = {
 	.groups = ab8505_groups,
 	.ngroups = ARRAY_SIZE(ab8505_groups),
 	.alternate_functions = ab8505_alternate_functions,
-	.gpio_irq_cluster = ab8505_gpio_irq_cluster,
-	.ngpio_irq_cluster = ARRAY_SIZE(ab8505_gpio_irq_cluster),
-	.irq_gpio_rising_offset = AB8500_INT_GPIO6R,
-	.irq_gpio_falling_offset = AB8500_INT_GPIO6F,
-	.irq_gpio_factor = 1,
 };
 
 void

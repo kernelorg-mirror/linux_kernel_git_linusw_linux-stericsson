@@ -455,13 +455,6 @@ alternate_functions ab9540alternate_functions[AB9540_GPIO_MAX_NUMBER + 1] = {
 	ALTERNATE_FUNCTIONS(54,	     5, UNUSED, UNUSED, 0, 0, 0), /* GPIO54 = GPIO60, altA controlled by bit 5 */
 };
 
-static struct abx500_gpio_irq_cluster ab9540_gpio_irq_cluster[] = {
-	GPIO_IRQ_CLUSTER(10, 13, AB8500_INT_GPIO10R),
-	GPIO_IRQ_CLUSTER(24, 25, AB8500_INT_GPIO24R),
-	GPIO_IRQ_CLUSTER(40, 41, AB8500_INT_GPIO40R),
-	GPIO_IRQ_CLUSTER(50, 54, AB9540_INT_GPIO50R),
-};
-
 static struct abx500_pinctrl_soc_data ab9540_soc = {
 	.gpio_ranges = ab9540_pinranges,
 	.gpio_num_ranges = ARRAY_SIZE(ab9540_pinranges),
@@ -472,11 +465,6 @@ static struct abx500_pinctrl_soc_data ab9540_soc = {
 	.groups = ab9540_groups,
 	.ngroups = ARRAY_SIZE(ab9540_groups),
 	.alternate_functions = ab9540alternate_functions,
-	.gpio_irq_cluster = ab9540_gpio_irq_cluster,
-	.ngpio_irq_cluster = ARRAY_SIZE(ab9540_gpio_irq_cluster),
-	.irq_gpio_rising_offset = AB8500_INT_GPIO6R,
-	.irq_gpio_falling_offset = AB8500_INT_GPIO6F,
-	.irq_gpio_factor = 1,
 };
 
 void

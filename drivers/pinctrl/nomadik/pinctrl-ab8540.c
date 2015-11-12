@@ -372,17 +372,6 @@ static struct pullud ab8540_pullud = {
 	.last_pin = 54,		/* GPIO4_VBAT */
 };
 
-/*
- * For AB8540 Only some GPIOs are interrupt capable:
- *	GPIO43 to GPIO44
- *	GPIO51 to GPIO54
- */
-static struct abx500_gpio_irq_cluster ab8540_gpio_irq_cluster[] = {
-	GPIO_IRQ_CLUSTER(43, 43, AB8540_INT_GPIO43F),
-	GPIO_IRQ_CLUSTER(44, 44, AB8540_INT_GPIO44F),
-	GPIO_IRQ_CLUSTER(51, 54, AB9540_INT_GPIO51R),
-};
-
 static struct abx500_pinctrl_soc_data ab8540_soc = {
 	.gpio_ranges = ab8540_pinranges,
 	.gpio_num_ranges = ARRAY_SIZE(ab8540_pinranges),
@@ -394,11 +383,6 @@ static struct abx500_pinctrl_soc_data ab8540_soc = {
 	.ngroups = ARRAY_SIZE(ab8540_groups),
 	.alternate_functions = ab8540_alternate_functions,
 	.pullud = &ab8540_pullud,
-	.gpio_irq_cluster = ab8540_gpio_irq_cluster,
-	.ngpio_irq_cluster = ARRAY_SIZE(ab8540_gpio_irq_cluster),
-	.irq_gpio_rising_offset = AB8540_INT_GPIO43R,
-	.irq_gpio_falling_offset = AB8540_INT_GPIO43F,
-	.irq_gpio_factor = 2,
 };
 
 void

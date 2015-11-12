@@ -105,8 +105,6 @@ struct abx500_pinctrl {
 	struct abx500_pinctrl_soc_data *soc;
 	struct gpio_chip chip;
 	struct ab8500 *parent;
-	struct abx500_gpio_irq_cluster *irq_cluster;
-	int irq_cluster_size;
 };
 
 /**
@@ -328,33 +326,6 @@ static int abx500_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
 				AB8500_GPIO_DIR1_REG,
 				offset,
 				ABX500_GPIO_INPUT);
-}
-
-static int abx500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-{
-	struct abx500_pinctrl *pct = to_abx500_pinctrl(chip);
-	/* The AB8500 GPIO numbers are off by one */
-	int gpio = offset + 1;
-	int hwirq;
-	int i;
-
-	for (i = 0; i < pct->irq_cluster_size; i++) {
-		struct abx500_gpio_irq_cluster *cluster =
-			&pct->irq_cluster[i];
-
-		if (gpio >= cluster->start && gpio <= cluster->end) {
-			/*
-			 * The ABx500 GPIO's associated IRQs are clustered together
-			 * throughout the interrupt numbers at irregular intervals.
-			 * To solve this quandry, we have placed the read-in values
-			 * into the cluster information table.
-			 */
-			hwirq = gpio - cluster->start + cluster->to_irq;
-			return irq_create_mapping(pct->parent->domain, hwirq);
-		}
-	}
-
-	return -EINVAL;
 }
 
 static int abx500_set_mode(struct pinctrl_dev *pctldev, struct gpio_chip *chip,
@@ -624,7 +595,6 @@ static void abx500_gpio_dbg_show_one(struct seq_file *s,
 	mode = abx500_get_mode(pctldev, chip, offset);
 
 	seq_printf(s, " %s", (mode < 0) ? "unknown" : modes[mode]);
-
 out:
 	if (ret < 0)
 		dev_err(pct->dev, "%s failed (%d)\n", __func__, ret);
@@ -663,7 +633,6 @@ static struct gpio_chip abx500gpio_chip = {
 	.get			= abx500_gpio_get,
 	.direction_output	= abx500_gpio_direction_output,
 	.set			= abx500_gpio_set,
-	.to_irq			= abx500_gpio_to_irq,
 	.dbg_show		= abx500_gpio_dbg_show,
 };
 
@@ -1207,8 +1176,6 @@ static int abx500_gpio_probe(struct platform_device *pdev)
 	}
 
 	pct->chip.ngpio = abx500_get_gpio_num(pct->soc);
-	pct->irq_cluster = pct->soc->gpio_irq_cluster;
-	pct->irq_cluster_size = pct->soc->ngpio_irq_cluster;
 
 	ret = gpiochip_add(&pct->chip);
 	if (ret) {

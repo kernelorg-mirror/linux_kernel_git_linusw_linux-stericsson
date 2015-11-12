@@ -106,30 +106,6 @@ struct pullud {
 	unsigned last_pin;
 };
 
-#define GPIO_IRQ_CLUSTER(a, b, c)	\
-{					\
-	.start = a,			\
-	.end = b,			\
-	.to_irq = c,			\
-}
-
-/**
- * struct abx500_gpio_irq_cluster - indicates GPIOs which are interrupt
- *			capable
- * @start:		The pin number of the first pin interrupt capable
- * @end:		The pin number of the last pin interrupt capable
- * @to_irq:		The ABx500 GPIO's associated IRQs are clustered
- *                      together throughout the interrupt numbers at irregular
- *                      intervals. To solve this quandary, we will place the
- *                      read-in values into the cluster information table
- */
-
-struct abx500_gpio_irq_cluster {
-	int start;
-	int end;
-	int to_irq;
-};
-
 /**
  * struct abx500_pinrange - map pin numbers to GPIO offsets
  * @offset:		offset into the GPIO local numberspace, incidentally
@@ -163,14 +139,6 @@ struct abx500_pinrange {
  *			how to set it.
  * @pullud:		array describing pins which supports pull up/down
  *			specific registers.
- * @gpio_irq_cluster:	An array of GPIO interrupt capable for this SoC
- * @ngpio_irq_cluster:	The number of GPIO inetrrupt capable for this SoC
- * @irq_gpio_rising_offset: Interrupt offset used as base to compute specific
- *			setting strategy of the rising interrupt line
- * @irq_gpio_falling_offset: Interrupt offset used as base to compute specific
- *			setting strategy of the falling interrupt line
- * @irq_gpio_factor:	Factor used to compute specific setting strategy of
- *			the interrupt line
  */
 
 struct abx500_pinctrl_soc_data {
@@ -184,11 +152,6 @@ struct abx500_pinctrl_soc_data {
 	unsigned ngroups;
 	struct alternate_functions *alternate_functions;
 	struct pullud *pullud;
-	struct abx500_gpio_irq_cluster *gpio_irq_cluster;
-	unsigned ngpio_irq_cluster;
-	int irq_gpio_rising_offset;
-	int irq_gpio_falling_offset;
-	int irq_gpio_factor;
 };
 
 #ifdef CONFIG_PINCTRL_AB8500
