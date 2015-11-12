@@ -621,8 +621,59 @@
 				#interrupt-cells = <2>;
 
 				ab8500_gpio: ab8500-gpio {
+					compatible = "stericsson,ab8500-gpio";
 					gpio-controller;
 					#gpio-cells = <2>;
+					/*
+					 * The AB8500 has 16 GPIOs on randomly named/numbered GPIO pins
+					 * 6 thru 13, 24, 25, 36 thru 41 totalling 16 pins, then one
+					 * bit is used for rising and one for falling edge so we end
+					 * up with 32 interrupts.
+					 */
+					interrupts = <40 IRQ_TYPE_LEVEL_HIGH
+						      41 IRQ_TYPE_LEVEL_HIGH
+						      42 IRQ_TYPE_LEVEL_HIGH
+						      43 IRQ_TYPE_LEVEL_HIGH
+						      44 IRQ_TYPE_LEVEL_HIGH
+						      45 IRQ_TYPE_LEVEL_HIGH
+						      46 IRQ_TYPE_LEVEL_HIGH
+						      47 IRQ_TYPE_LEVEL_HIGH
+						      48 IRQ_TYPE_LEVEL_HIGH
+						      49 IRQ_TYPE_LEVEL_HIGH
+						      50 IRQ_TYPE_LEVEL_HIGH
+						      51 IRQ_TYPE_LEVEL_HIGH
+						      52 IRQ_TYPE_LEVEL_HIGH
+						      53 IRQ_TYPE_LEVEL_HIGH
+						      54 IRQ_TYPE_LEVEL_HIGH
+						      55 IRQ_TYPE_LEVEL_HIGH
+						      56 IRQ_TYPE_LEVEL_HIGH
+						      57 IRQ_TYPE_LEVEL_HIGH
+						      58 IRQ_TYPE_LEVEL_HIGH
+						      59 IRQ_TYPE_LEVEL_HIGH
+						      60 IRQ_TYPE_LEVEL_HIGH
+						      61 IRQ_TYPE_LEVEL_HIGH
+						      62 IRQ_TYPE_LEVEL_HIGH
+						      63 IRQ_TYPE_LEVEL_HIGH
+						      64 IRQ_TYPE_LEVEL_HIGH
+						      65 IRQ_TYPE_LEVEL_HIGH
+						      66 IRQ_TYPE_LEVEL_HIGH
+						      67 IRQ_TYPE_LEVEL_HIGH
+						      68 IRQ_TYPE_LEVEL_HIGH
+						      69 IRQ_TYPE_LEVEL_HIGH
+						      70 IRQ_TYPE_LEVEL_HIGH
+						      71 IRQ_TYPE_LEVEL_HIGH>;
+					interrupt-names = "GPIO6R", "GPIO7R", "GPIO8R",
+							"GPIO9R", "GPIO10R", "GPIO11R",
+							"GPIO12R", "GPIO13R", "GPIO24R",
+							"GPIO25R", "GPIO36R", "GPIO37R",
+							"GPIO38R", "GPIO39R", "GPIO40R",
+							"GPIO41R", "GPIO6F", "GPIO7F",
+							"GPIO8F", "GPIO9F", "GPIO10F",
+							"GPIO11F", "GPIO12F", "GPIO13F",
+							"GPIO24F", "GPIO25F", "GPIO36F",
+							"GPIO37F", "GPIO38F", "GPIO39F",
+							"GPIO40F", "GPIO41F";
+
 				};
 
 				ab8500-rtc {
