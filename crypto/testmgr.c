@@ -364,11 +364,14 @@ static int __test_hash(struct crypto_ahash *tfm,
 
 		if (memcmp(result, template[i].digest,
 			   crypto_ahash_digestsize(tfm))) {
-			printk(KERN_ERR "alg: hash: Test %d failed for %s\n",
+			printk(KERN_ERR "alg: hash: Test %d FAILED for %s\n",
 			       j, algo);
 			hexdump(result, crypto_ahash_digestsize(tfm));
 			ret = -EINVAL;
 			goto out;
+		} else {
+			printk(KERN_ERR "alg: hash: Test %d SUCCEEDED for %s\n",
+			       j, algo);
 		}
 	}
 
@@ -442,10 +445,16 @@ static int __test_hash(struct crypto_ahash *tfm,
 		if (memcmp(result, template[i].digest,
 			   crypto_ahash_digestsize(tfm))) {
 			printk(KERN_ERR "alg: hash: Chunking test %d "
-			       "failed for %s\n", j, algo);
+			       "FAILED for %s\n", j, algo);
+			printk(KERN_ERR "result:\n");
 			hexdump(result, crypto_ahash_digestsize(tfm));
+			printk(KERN_ERR "expected:\n");
+			hexdump(template[i].digest, crypto_ahash_digestsize(tfm));
 			ret = -EINVAL;
 			goto out;
+		} else {
+			printk(KERN_ERR "alg: hash: Chunking test %d SUCCEEDED for %s\n",
+			       j, algo);
 		}
 	}
 
@@ -519,12 +528,16 @@ static int __test_hash(struct crypto_ahash *tfm,
 		}
 		if (memcmp(result, template[i].digest,
 			   crypto_ahash_digestsize(tfm))) {
-			pr_err("alg: hash: Partial Test %d failed for %s\n",
+			pr_err("alg: hash: Partial Test %d FAILED for %s\n",
 			       j, algo);
 			hexdump(result, crypto_ahash_digestsize(tfm));
 			ret = -EINVAL;
 			goto out;
+		} else {
+			printk(KERN_ERR "alg: hash: Partial Test %d SUCCEEDED for %s\n",
+			       j, algo);
 		}
+
 	}
 
 	ret = 0;
