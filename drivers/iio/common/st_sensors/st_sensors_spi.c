@@ -103,10 +103,17 @@ static const struct st_sensor_transfer_function st_sensors_tf_spi = {
 	.read_multiple_byte = st_sensors_spi_read_multiple_byte,
 };
 
-void st_sensors_spi_configure(struct iio_dev *indio_dev,
-			struct spi_device *spi, struct st_sensor_data *sdata)
+int st_sensors_spi_probe(struct spi_device *spi,
+			 struct iio_dev **ret_indio_dev)
 {
-	spi_set_drvdata(spi, indio_dev);
+	struct iio_dev *indio_dev;
+	struct st_sensor_data *sdata;
+
+	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*sdata));
+	if (!indio_dev)
+		return -ENOMEM;
+
+	sdata = iio_priv(indio_dev);
 
 	indio_dev->dev.parent = &spi->dev;
 	indio_dev->name = spi->modalias;
@@ -114,8 +121,14 @@ void st_sensors_spi_configure(struct iio_dev *indio_dev,
 	sdata->dev = &spi->dev;
 	sdata->tf = &st_sensors_tf_spi;
 	sdata->get_irq_data_ready = st_sensors_spi_get_irq;
+
+	spi_set_drvdata(spi, indio_dev);
+
+	*ret_indio_dev = indio_dev;
+
+	return 0;
 }
-EXPORT_SYMBOL(st_sensors_spi_configure);
+EXPORT_SYMBOL(st_sensors_spi_probe);
 
 MODULE_AUTHOR("Denis Ciocca <denis.ciocca@st.com>");
 MODULE_DESCRIPTION("STMicroelectronics ST-sensors spi driver");

@@ -21,19 +21,14 @@
 static int st_gyro_spi_probe(struct spi_device *spi)
 {
 	struct iio_dev *indio_dev;
-	struct st_sensor_data *gdata;
 	int err;
 
-	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*gdata));
-	if (!indio_dev)
-		return -ENOMEM;
-
-	gdata = iio_priv(indio_dev);
-
-	st_sensors_spi_configure(indio_dev, spi, gdata);
+	err = st_sensors_spi_probe(spi, &indio_dev);
+	if (err)
+		return err;
 
 	err = st_gyro_common_probe(indio_dev);
-	if (err < 0)
+	if (err)
 		return err;
 
 	return 0;
