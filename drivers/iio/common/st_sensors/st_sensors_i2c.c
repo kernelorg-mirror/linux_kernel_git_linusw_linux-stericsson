@@ -64,20 +64,6 @@ static const struct st_sensor_transfer_function st_sensors_tf_i2c = {
 	.read_multiple_byte = st_sensors_i2c_read_multiple_byte,
 };
 
-void st_sensors_i2c_configure(struct iio_dev *indio_dev,
-		struct i2c_client *client, struct st_sensor_data *sdata)
-{
-	i2c_set_clientdata(client, indio_dev);
-
-	indio_dev->dev.parent = &client->dev;
-	indio_dev->name = client->name;
-
-	sdata->dev = &client->dev;
-	sdata->tf = &st_sensors_tf_i2c;
-	sdata->get_irq_data_ready = st_sensors_i2c_get_irq;
-}
-EXPORT_SYMBOL(st_sensors_i2c_configure);
-
 #ifdef CONFIG_OF
 /**
  * st_sensors_of_i2c_probe() - device tree probe for ST I2C sensors
@@ -91,8 +77,8 @@ EXPORT_SYMBOL(st_sensors_i2c_configure);
  * rely on that name from this point on. I2C client devices will be renamed
  * to match the internal kernel convention.
  */
-void st_sensors_of_i2c_probe(struct i2c_client *client,
-			     const struct of_device_id *match)
+static void st_sensors_of_i2c_probe(struct i2c_client *client,
+				    const struct of_device_id *match)
 {
 	const struct of_device_id *of_id;
 
@@ -104,8 +90,41 @@ void st_sensors_of_i2c_probe(struct i2c_client *client,
 	strncpy(client->name, of_id->data, sizeof(client->name));
 	client->name[sizeof(client->name) - 1] = '\0';
 }
-EXPORT_SYMBOL(st_sensors_of_i2c_probe);
+#else
+static void st_sensors_of_i2c_probe(struct i2c_client *client,
+				    const struct of_device_id *match)
+{
+}
 #endif
+
+int st_sensors_i2c_probe(struct i2c_client *client,
+			 const struct of_device_id *match,
+			 struct iio_dev **ret_indio_dev)
+{
+	struct iio_dev *indio_dev;
+	struct st_sensor_data *sdata;
+
+	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*sdata));
+	if (!indio_dev)
+		return -ENOMEM;
+
+	sdata = iio_priv(indio_dev);
+	st_sensors_of_i2c_probe(client, match);
+
+	indio_dev->dev.parent = &client->dev;
+	indio_dev->name = client->name;
+
+	sdata->dev = &client->dev;
+	sdata->tf = &st_sensors_tf_i2c;
+	sdata->get_irq_data_ready = st_sensors_i2c_get_irq;
+
+	i2c_set_clientdata(client, indio_dev);
+
+	*ret_indio_dev = indio_dev;
+
+	return 0;
+}
+EXPORT_SYMBOL(st_sensors_i2c_probe);
 
 MODULE_AUTHOR("Denis Ciocca <denis.ciocca@st.com>");
 MODULE_DESCRIPTION("STMicroelectronics ST-sensors i2c driver");

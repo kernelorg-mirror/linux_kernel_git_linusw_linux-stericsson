@@ -48,23 +48,17 @@ MODULE_DEVICE_TABLE(of, st_magn_of_match);
 #endif
 
 static int st_magn_i2c_probe(struct i2c_client *client,
-						const struct i2c_device_id *id)
+			     const struct i2c_device_id *id)
 {
 	struct iio_dev *indio_dev;
-	struct st_sensor_data *mdata;
 	int err;
 
-	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*mdata));
-	if (!indio_dev)
-		return -ENOMEM;
-
-	mdata = iio_priv(indio_dev);
-	st_sensors_of_i2c_probe(client, st_magn_of_match);
-
-	st_sensors_i2c_configure(indio_dev, client, mdata);
+	err = st_sensors_i2c_probe(client, st_magn_of_match, &indio_dev);
+	if (err)
+		return err;
 
 	err = st_magn_common_probe(indio_dev);
-	if (err < 0)
+	if (err)
 		return err;
 
 	return 0;
