@@ -100,6 +100,7 @@ static struct i2c_driver st_gyro_driver = {
 	.driver = {
 		.name = "st-gyro-i2c",
 		.of_match_table = of_match_ptr(st_gyro_of_match),
+		.pm = &st_sensors_dev_pm_ops,
 	},
 	.probe = st_gyro_i2c_probe,
 	.remove = st_gyro_i2c_remove,

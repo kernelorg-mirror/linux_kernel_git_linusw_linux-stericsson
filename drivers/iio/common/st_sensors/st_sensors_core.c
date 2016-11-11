@@ -15,9 +15,9 @@
 #include <linux/iio/iio.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of.h>
-#include <asm/unaligned.h>
 #include <linux/iio/common/st_sensors.h>
-
+#include <linux/pm_runtime.h>
+#include <asm/unaligned.h>
 #include "st_sensors_core.h"
 
 static inline u32 st_sensors_get_unaligned_le24(const u8 *p)
@@ -181,10 +181,12 @@ int st_sensors_set_axis_enable(struct iio_dev *indio_dev, u8 axis_enable)
 }
 EXPORT_SYMBOL(st_sensors_set_axis_enable);
 
-int st_sensors_power_init(struct iio_dev *indio_dev)
+int st_sensors_pm_init(struct iio_dev *indio_dev)
 {
 	struct st_sensor_data *pdata = iio_priv(indio_dev);
 	int err;
+
+	dev_info(&indio_dev->dev, "ENTER %s\n", __func__);
 
 	/* Regulators not mandatory, but if requested we should enable them. */
 	pdata->vdd = devm_regulator_get(indio_dev->dev.parent, "vdd");
@@ -212,21 +214,38 @@ int st_sensors_power_init(struct iio_dev *indio_dev)
 		goto st_sensors_disable_vdd;
 	}
 
+	dev_info(&indio_dev->dev, "RUNTIME ENABLE %s\n", __func__);
+
+	/* Enable runtime PM */
+        pm_runtime_get_noresume(indio_dev->dev.parent);
+        pm_runtime_set_active(indio_dev->dev.parent);
+        pm_runtime_enable(indio_dev->dev.parent);
+        /*
+         * Set autosuspend to two orders of magnitude larger than the
+         * start-up time.
+         */
+        pm_runtime_set_autosuspend_delay(indio_dev->dev.parent,
+		pdata->sensor_settings->bootime * 1000 * 10);
+        pm_runtime_use_autosuspend(indio_dev->dev.parent);
+	/* The individual driver will call pm_runtime_put() */
+
 	return 0;
 
 st_sensors_disable_vdd:
 	regulator_disable(pdata->vdd);
 	return err;
 }
-EXPORT_SYMBOL(st_sensors_power_init);
+EXPORT_SYMBOL(st_sensors_pm_init);
 
-int st_sensors_power_enable(struct iio_dev *indio_dev)
+static int st_sensors_power_enable(struct iio_dev *indio_dev)
 {
 	struct st_sensor_data *sdata = iio_priv(indio_dev);
 	bool odr_match = false;
 	struct st_sensor_odr_avl odr_out = {0, 0};
 	u8 tmp;
 	int err;
+
+	dev_info(&indio_dev->dev, "%s\n", __func__);
 
 	/* First turn on the regulators */
 	err = regulator_enable(sdata->vdd);
@@ -325,12 +344,13 @@ int st_sensors_power_enable(struct iio_dev *indio_dev)
 
 	return 0;
 }
-EXPORT_SYMBOL(st_sensors_power_enable);
 
-int st_sensors_power_disable(struct iio_dev *indio_dev)
+static int st_sensors_power_disable(struct iio_dev *indio_dev)
 {
 	struct st_sensor_data *sdata = iio_priv(indio_dev);
 	int err;
+
+	dev_info(&indio_dev->dev, "%s\n", __func__);
 
 	err = st_sensors_write_data_with_mask(indio_dev,
 				sdata->sensor_settings->pw.addr,
@@ -347,7 +367,41 @@ int st_sensors_power_disable(struct iio_dev *indio_dev)
 
 	return 0;
 }
-EXPORT_SYMBOL(st_sensors_power_disable);
+
+void st_sensors_pm_disable(struct iio_dev *indio_dev)
+{
+	pm_runtime_get_sync(indio_dev->dev.parent);
+	pm_runtime_put_noidle(indio_dev->dev.parent);
+	pm_runtime_disable(indio_dev->dev.parent);
+	st_sensors_power_disable(indio_dev);
+}
+EXPORT_SYMBOL(st_sensors_pm_disable);
+
+#ifdef CONFIG_PM
+static int st_sensors_runtime_suspend(struct device *dev)
+{
+	/* This is the I2C clientdata or SPI drvdata */
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+
+	return st_sensors_power_disable(indio_dev);
+}
+
+static int st_sensors_runtime_resume(struct device *dev)
+{
+	/* This is the I2C clientdata or SPI drvdata */
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+
+	return st_sensors_power_enable(indio_dev);
+}
+#endif /* CONFIG_PM */
+
+const struct dev_pm_ops st_sensors_dev_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
+				pm_runtime_force_resume)
+	SET_RUNTIME_PM_OPS(st_sensors_runtime_suspend,
+			   st_sensors_runtime_resume, NULL)
+};
+EXPORT_SYMBOL(st_sensors_dev_pm_ops);
 
 static int st_sensors_set_drdy_int_pin(struct iio_dev *indio_dev,
 					struct st_sensors_platform_data *pdata)
@@ -545,25 +599,24 @@ int st_sensors_read_info_raw(struct iio_dev *indio_dev,
 {
 	int err;
 
+	pm_runtime_get_sync(indio_dev->dev.parent);
 	mutex_lock(&indio_dev->mlock);
+
 	if (indio_dev->currentmode == INDIO_BUFFER_TRIGGERED) {
 		err = -EBUSY;
 		goto out;
 	} else {
-		err = st_sensors_power_enable(indio_dev);
-		if (err)
-			goto out;
-
 		err = st_sensors_read_axis_data(indio_dev, ch, val);
 		if (err < 0)
 			goto out;
 
 		*val = *val >> ch->scan_type.shift;
-
-		err = st_sensors_power_disable(indio_dev);
 	}
+
 out:
 	mutex_unlock(&indio_dev->mlock);
+	pm_runtime_mark_last_busy(indio_dev->dev.parent);
+	pm_runtime_put_autosuspend(indio_dev->dev.parent);
 
 	return err;
 }

@@ -79,6 +79,7 @@ static struct i2c_driver st_press_driver = {
 	.driver = {
 		.name = "st-press-i2c",
 		.of_match_table = of_match_ptr(st_press_of_match),
+		.pm = &st_sensors_dev_pm_ops,
 	},
 	.probe = st_press_i2c_probe,
 	.remove = st_press_i2c_remove,

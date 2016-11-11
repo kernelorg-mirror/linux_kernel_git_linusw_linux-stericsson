@@ -23,7 +23,7 @@
 #include <linux/iio/sysfs.h>
 #include <linux/iio/trigger.h>
 #include <linux/iio/buffer.h>
-
+#include <linux/pm_runtime.h>
 #include <linux/iio/common/st_sensors.h>
 #include "st_gyro.h"
 
@@ -353,7 +353,7 @@ int st_gyro_common_probe(struct iio_dev *indio_dev)
 	indio_dev->info = &gyro_info;
 	mutex_init(&gdata->tb.buf_lock);
 
-	err = st_sensors_power_init(indio_dev);
+	err = st_sensors_pm_init(indio_dev);
 	if (err)
 		return err;
 
@@ -395,7 +395,9 @@ int st_gyro_common_probe(struct iio_dev *indio_dev)
 	dev_info(&indio_dev->dev, "registered gyroscope %s\n",
 		 indio_dev->name);
 
-	return st_sensors_power_disable(indio_dev);
+	pm_runtime_put(indio_dev->dev.parent);
+
+	return 0;
 
 st_gyro_device_register_error:
 	if (irq > 0)
@@ -403,7 +405,7 @@ st_gyro_device_register_error:
 st_gyro_probe_trigger_error:
 	st_gyro_deallocate_ring(indio_dev);
 st_gyro_power_off:
-	st_sensors_power_disable(indio_dev);
+	st_sensors_pm_disable(indio_dev);
 
 	return err;
 }
@@ -413,7 +415,7 @@ void st_gyro_common_remove(struct iio_dev *indio_dev)
 {
 	struct st_sensor_data *gdata = iio_priv(indio_dev);
 
-	st_sensors_power_disable(indio_dev);
+	st_sensors_pm_disable(indio_dev);
 
 	iio_device_unregister(indio_dev);
 	if (gdata->get_irq_data_ready(indio_dev) > 0)

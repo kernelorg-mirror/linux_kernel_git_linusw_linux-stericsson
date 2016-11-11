@@ -17,6 +17,7 @@
 #include <linux/iio/trigger.h>
 #include <linux/bitops.h>
 #include <linux/regulator/consumer.h>
+#include <linux/device.h>
 
 #include <linux/platform_data/st_sensors_pdata.h>
 
@@ -268,6 +269,9 @@ struct st_sensor_data {
 	s64 hw_timestamp;
 };
 
+/* PM ops */
+extern const struct dev_pm_ops st_sensors_dev_pm_ops;
+
 #ifdef CONFIG_IIO_BUFFER
 irqreturn_t st_sensors_trigger_handler(int irq, void *p);
 #endif
@@ -297,11 +301,9 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev,
 
 int st_sensors_set_axis_enable(struct iio_dev *indio_dev, u8 axis_enable);
 
-int st_sensors_power_init(struct iio_dev *indio_dev);
+int st_sensors_pm_init(struct iio_dev *indio_dev);
 
-int st_sensors_power_enable(struct iio_dev *indio_dev);
-
-int st_sensors_power_disable(struct iio_dev *indio_dev);
+void st_sensors_pm_disable(struct iio_dev *indio_dev);
 
 int st_sensors_debugfs_reg_access(struct iio_dev *indio_dev,
 				  unsigned reg, unsigned writeval,

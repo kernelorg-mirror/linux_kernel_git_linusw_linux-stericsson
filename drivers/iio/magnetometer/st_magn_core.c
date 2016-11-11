@@ -22,7 +22,7 @@
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
 #include <linux/iio/buffer.h>
-
+#include <linux/pm_runtime.h>
 #include <linux/iio/common/st_sensors.h>
 #include "st_magn.h"
 
@@ -463,7 +463,7 @@ int st_magn_common_probe(struct iio_dev *indio_dev)
 	indio_dev->info = &magn_info;
 	mutex_init(&mdata->tb.buf_lock);
 
-	err = st_sensors_power_init(indio_dev);
+	err = st_sensors_pm_init(indio_dev);
 	if (err)
 		return err;
 
@@ -504,7 +504,9 @@ int st_magn_common_probe(struct iio_dev *indio_dev)
 	dev_info(&indio_dev->dev, "registered magnetometer %s\n",
 		 indio_dev->name);
 
-	return st_sensors_power_disable(indio_dev);
+	pm_runtime_put(indio_dev->dev.parent);
+
+	return 0;
 
 st_magn_device_register_error:
 	if (irq > 0)
@@ -512,7 +514,7 @@ st_magn_device_register_error:
 st_magn_probe_trigger_error:
 	st_magn_deallocate_ring(indio_dev);
 st_magn_power_off:
-	st_sensors_power_disable(indio_dev);
+	st_sensors_pm_disable(indio_dev);
 
 	return err;
 }
@@ -522,7 +524,7 @@ void st_magn_common_remove(struct iio_dev *indio_dev)
 {
 	struct st_sensor_data *mdata = iio_priv(indio_dev);
 
-	st_sensors_power_disable(indio_dev);
+	st_sensors_pm_disable(indio_dev);
 
 	iio_device_unregister(indio_dev);
 	if (mdata->get_irq_data_ready(indio_dev) > 0)

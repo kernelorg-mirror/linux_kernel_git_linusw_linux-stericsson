@@ -142,6 +142,7 @@ static struct i2c_driver st_accel_driver = {
 	.driver = {
 		.name = "st-accel-i2c",
 		.of_match_table = of_match_ptr(st_accel_of_match),
+		.pm = &st_sensors_dev_pm_ops,
 	},
 	.probe = st_accel_i2c_probe,
 	.remove = st_accel_i2c_remove,

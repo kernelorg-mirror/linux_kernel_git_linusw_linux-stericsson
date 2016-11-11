@@ -23,6 +23,7 @@
 #include <linux/iio/sysfs.h>
 #include <linux/iio/trigger.h>
 #include <linux/iio/buffer.h>
+#include <linux/pm_runtime.h>
 #include <asm/unaligned.h>
 
 #include <linux/iio/common/st_sensors.h>
@@ -572,7 +573,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
 	indio_dev->info = &press_info;
 	mutex_init(&press_data->tb.buf_lock);
 
-	err = st_sensors_power_init(indio_dev);
+	err = st_sensors_pm_init(indio_dev);
 	if (err)
 		return err;
 
@@ -627,7 +628,9 @@ int st_press_common_probe(struct iio_dev *indio_dev)
 	dev_info(&indio_dev->dev, "registered pressure sensor %s\n",
 		 indio_dev->name);
 
-	return st_sensors_power_disable(indio_dev);
+	pm_runtime_put(indio_dev->dev.parent);
+
+	return 0;
 
 st_press_device_register_error:
 	if (irq > 0)
@@ -635,7 +638,7 @@ st_press_device_register_error:
 st_press_probe_trigger_error:
 	st_press_deallocate_ring(indio_dev);
 st_press_power_off:
-	st_sensors_power_disable(indio_dev);
+	st_sensors_pm_disable(indio_dev);
 
 	return err;
 }
@@ -645,7 +648,7 @@ void st_press_common_remove(struct iio_dev *indio_dev)
 {
 	struct st_sensor_data *press_data = iio_priv(indio_dev);
 
-	st_sensors_power_disable(indio_dev);
+	st_sensors_pm_disable(indio_dev);
 
 	iio_device_unregister(indio_dev);
 	if (press_data->get_irq_data_ready(indio_dev) > 0)

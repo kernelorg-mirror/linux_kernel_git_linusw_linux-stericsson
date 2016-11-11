@@ -57,6 +57,7 @@ MODULE_DEVICE_TABLE(spi, st_gyro_id_table);
 static struct spi_driver st_gyro_driver = {
 	.driver = {
 		.name = "st-gyro-spi",
+		.pm = &st_sensors_dev_pm_ops,
 	},
 	.probe = st_gyro_spi_probe,
 	.remove = st_gyro_spi_remove,
