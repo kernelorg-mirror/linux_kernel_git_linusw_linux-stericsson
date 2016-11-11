@@ -627,7 +627,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
 	dev_info(&indio_dev->dev, "registered pressure sensor %s\n",
 		 indio_dev->name);
 
-	return err;
+	return st_sensors_power_disable(indio_dev);
 
 st_press_device_register_error:
 	if (irq > 0)

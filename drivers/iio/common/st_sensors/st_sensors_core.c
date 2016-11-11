@@ -170,53 +170,6 @@ st_accel_set_fullscale_error:
 	return err;
 }
 
-int st_sensors_set_enable(struct iio_dev *indio_dev, bool enable)
-{
-	u8 tmp_value;
-	int err = -EINVAL;
-	bool found = false;
-	struct st_sensor_odr_avl odr_out = {0, 0};
-	struct st_sensor_data *sdata = iio_priv(indio_dev);
-
-	if (enable) {
-		tmp_value = sdata->sensor_settings->pw.value_on;
-		if ((sdata->sensor_settings->odr.addr ==
-					sdata->sensor_settings->pw.addr) &&
-				(sdata->sensor_settings->odr.mask ==
-					sdata->sensor_settings->pw.mask)) {
-			err = st_sensors_match_odr(sdata->sensor_settings,
-							sdata->odr, &odr_out);
-			if (err < 0)
-				goto set_enable_error;
-			tmp_value = odr_out.value;
-			found = true;
-		}
-		err = st_sensors_write_data_with_mask(indio_dev,
-				sdata->sensor_settings->pw.addr,
-				sdata->sensor_settings->pw.mask, tmp_value);
-		if (err < 0)
-			goto set_enable_error;
-
-		sdata->enabled = true;
-
-		if (found)
-			sdata->odr = odr_out.hz;
-	} else {
-		err = st_sensors_write_data_with_mask(indio_dev,
-				sdata->sensor_settings->pw.addr,
-				sdata->sensor_settings->pw.mask,
-				sdata->sensor_settings->pw.value_off);
-		if (err < 0)
-			goto set_enable_error;
-
-		sdata->enabled = false;
-	}
-
-set_enable_error:
-	return err;
-}
-EXPORT_SYMBOL(st_sensors_set_enable);
-
 int st_sensors_set_axis_enable(struct iio_dev *indio_dev, u8 axis_enable)
 {
 	struct st_sensor_data *sdata = iio_priv(indio_dev);
@@ -267,12 +220,132 @@ st_sensors_disable_vdd:
 }
 EXPORT_SYMBOL(st_sensors_power_init);
 
-void st_sensors_power_disable(struct iio_dev *indio_dev)
+int st_sensors_power_enable(struct iio_dev *indio_dev)
 {
-	struct st_sensor_data *pdata = iio_priv(indio_dev);
+	struct st_sensor_data *sdata = iio_priv(indio_dev);
+	bool odr_match = false;
+	struct st_sensor_odr_avl odr_out = {0, 0};
+	u8 tmp;
+	int err;
 
-	regulator_disable(pdata->vdd);
-	regulator_disable(pdata->vdd_io);
+	/* First turn on the regulators */
+	err = regulator_enable(sdata->vdd);
+	if (err) {
+		dev_err(&indio_dev->dev,
+			"Failed to enable specified Vdd supply\n");
+		return err;
+	}
+	err = regulator_enable(sdata->vdd_io);
+	if (err) {
+		dev_err(&indio_dev->dev,
+			"Failed to enable specified Vdd_IO supply\n");
+		return err;
+	}
+
+	/* Then hammer it on in the power register */
+	tmp = sdata->sensor_settings->pw.value_on;
+	if ((sdata->sensor_settings->odr.addr ==
+	     sdata->sensor_settings->pw.addr) &&
+	    (sdata->sensor_settings->odr.mask ==
+	     sdata->sensor_settings->pw.mask)) {
+		err = st_sensors_match_odr(sdata->sensor_settings,
+					   sdata->odr, &odr_out);
+		if (err) {
+			dev_err(&indio_dev->dev,
+				"Failed to match ODR to PW register\n");
+			return err;
+		}
+		tmp = odr_out.value;
+		odr_match = true;
+	}
+	err = st_sensors_write_data_with_mask(indio_dev,
+			sdata->sensor_settings->pw.addr,
+			sdata->sensor_settings->pw.mask, tmp);
+	if (err) {
+		dev_err(&indio_dev->dev,
+			"Failed to write PW register (enable)\n");
+		return err;
+	}
+
+	/* Wait for the sensor to boot */
+	msleep((sdata->sensor_settings->bootime * 1000) / sdata->odr);
+	sdata->enabled = true;
+
+	/* Disable DRDY, this might be still be enabled after reboot. */
+	err = st_sensors_set_dataready_irq(indio_dev, false);
+	if (err)
+		return err;
+
+	if (sdata->current_fullscale) {
+		err = st_sensors_set_fullscale(indio_dev,
+						sdata->current_fullscale->num);
+		if (err)
+			return err;
+	} else
+		dev_info(&indio_dev->dev, "Full-scale not possible\n");
+
+	err = st_sensors_set_odr(indio_dev, sdata->odr);
+	if (err)
+		return err;
+
+	/* set BDU */
+	if (sdata->sensor_settings->bdu.addr) {
+		err = st_sensors_write_data_with_mask(indio_dev,
+					sdata->sensor_settings->bdu.addr,
+					sdata->sensor_settings->bdu.mask, true);
+		if (err)
+			return err;
+	}
+
+	/* set DAS */
+	if (sdata->sensor_settings->das.addr) {
+		err = st_sensors_write_data_with_mask(indio_dev,
+					sdata->sensor_settings->das.addr,
+					sdata->sensor_settings->das.mask, 1);
+		if (err < 0)
+			return err;
+	}
+
+	if (sdata->int_pin_open_drain) {
+		dev_info(&indio_dev->dev,
+			 "set interrupt line to open drain mode\n");
+		err = st_sensors_write_data_with_mask(indio_dev,
+				sdata->sensor_settings->drdy_irq.addr_od,
+				sdata->sensor_settings->drdy_irq.mask_od, 1);
+		if (err < 0)
+			return err;
+	}
+
+	err = st_sensors_set_axis_enable(indio_dev, ST_SENSORS_ENABLE_ALL_AXIS);
+	if (err)
+		return err;
+
+	if (odr_match)
+		sdata->odr = odr_out.hz;
+
+	return 0;
+}
+EXPORT_SYMBOL(st_sensors_power_enable);
+
+int st_sensors_power_disable(struct iio_dev *indio_dev)
+{
+	struct st_sensor_data *sdata = iio_priv(indio_dev);
+	int err;
+
+	err = st_sensors_write_data_with_mask(indio_dev,
+				sdata->sensor_settings->pw.addr,
+				sdata->sensor_settings->pw.mask,
+				sdata->sensor_settings->pw.value_off);
+	if (err)
+		dev_err(&indio_dev->dev,
+			"Failed to write PW register (disable)\n");
+
+	regulator_disable(sdata->vdd);
+	regulator_disable(sdata->vdd_io);
+
+	sdata->enabled = false;
+
+	return 0;
 }
 EXPORT_SYMBOL(st_sensors_power_disable);
 
@@ -354,11 +427,10 @@ static struct st_sensors_platform_data *st_sensors_of_probe(struct device *dev,
 #endif
 
 int st_sensors_init_sensor(struct iio_dev *indio_dev,
-					struct st_sensors_platform_data *pdata)
+			   struct st_sensors_platform_data *pdata)
 {
-	struct st_sensor_data *sdata = iio_priv(indio_dev);
 	struct st_sensors_platform_data *of_pdata;
-	int err = 0;
+	int err;
 
 	/* If OF/DT pdata exists, it will take precedence of anything else */
 	of_pdata = st_sensors_of_probe(indio_dev->dev.parent, pdata);
@@ -367,62 +439,11 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev,
 
 	if (pdata) {
 		err = st_sensors_set_drdy_int_pin(indio_dev, pdata);
-		if (err < 0)
+		if (err)
 			return err;
 	}
 
-	err = st_sensors_set_enable(indio_dev, false);
-	if (err < 0)
-		return err;
-
-	/* Disable DRDY, this might be still be enabled after reboot. */
-	err = st_sensors_set_dataready_irq(indio_dev, false);
-	if (err < 0)
-		return err;
-
-	if (sdata->current_fullscale) {
-		err = st_sensors_set_fullscale(indio_dev,
-						sdata->current_fullscale->num);
-		if (err < 0)
-			return err;
-	} else
-		dev_info(&indio_dev->dev, "Full-scale not possible\n");
-
-	err = st_sensors_set_odr(indio_dev, sdata->odr);
-	if (err < 0)
-		return err;
-
-	/* set BDU */
-	if (sdata->sensor_settings->bdu.addr) {
-		err = st_sensors_write_data_with_mask(indio_dev,
-					sdata->sensor_settings->bdu.addr,
-					sdata->sensor_settings->bdu.mask, true);
-		if (err < 0)
-			return err;
-	}
-
-	/* set DAS */
-	if (sdata->sensor_settings->das.addr) {
-		err = st_sensors_write_data_with_mask(indio_dev,
-					sdata->sensor_settings->das.addr,
-					sdata->sensor_settings->das.mask, 1);
-		if (err < 0)
-			return err;
-	}
-
-	if (sdata->int_pin_open_drain) {
-		dev_info(&indio_dev->dev,
-			 "set interrupt line to open drain mode\n");
-		err = st_sensors_write_data_with_mask(indio_dev,
-				sdata->sensor_settings->drdy_irq.addr_od,
-				sdata->sensor_settings->drdy_irq.mask_od, 1);
-		if (err < 0)
-			return err;
-	}
-
-	err = st_sensors_set_axis_enable(indio_dev, ST_SENSORS_ENABLE_ALL_AXIS);
-
-	return err;
+	return 0;
 }
 EXPORT_SYMBOL(st_sensors_init_sensor);
 
@@ -523,25 +544,23 @@ int st_sensors_read_info_raw(struct iio_dev *indio_dev,
 				struct iio_chan_spec const *ch, int *val)
 {
 	int err;
-	struct st_sensor_data *sdata = iio_priv(indio_dev);
 
 	mutex_lock(&indio_dev->mlock);
 	if (indio_dev->currentmode == INDIO_BUFFER_TRIGGERED) {
 		err = -EBUSY;
 		goto out;
 	} else {
-		err = st_sensors_set_enable(indio_dev, true);
-		if (err < 0)
+		err = st_sensors_power_enable(indio_dev);
+		if (err)
 			goto out;
 
-		msleep((sdata->sensor_settings->bootime * 1000) / sdata->odr);
 		err = st_sensors_read_axis_data(indio_dev, ch, val);
 		if (err < 0)
 			goto out;
 
 		*val = *val >> ch->scan_type.shift;
 
-		err = st_sensors_set_enable(indio_dev, false);
+		err = st_sensors_power_disable(indio_dev);
 	}
 out:
 	mutex_unlock(&indio_dev->mlock);

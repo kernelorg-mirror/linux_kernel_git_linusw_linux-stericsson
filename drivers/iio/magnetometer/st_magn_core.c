@@ -504,7 +504,7 @@ int st_magn_common_probe(struct iio_dev *indio_dev)
 	dev_info(&indio_dev->dev, "registered magnetometer %s\n",
 		 indio_dev->name);
 
-	return 0;
+	return st_sensors_power_disable(indio_dev);
 
 st_magn_device_register_error:
 	if (irq > 0)

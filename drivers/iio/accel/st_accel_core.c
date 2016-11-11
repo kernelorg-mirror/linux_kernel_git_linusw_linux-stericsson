@@ -762,7 +762,7 @@ int st_accel_common_probe(struct iio_dev *indio_dev)
 	dev_info(&indio_dev->dev, "registered accelerometer %s\n",
 		 indio_dev->name);
 
-	return 0;
+	return st_sensors_power_disable(indio_dev);
 
 st_accel_device_register_error:
 	if (irq > 0)

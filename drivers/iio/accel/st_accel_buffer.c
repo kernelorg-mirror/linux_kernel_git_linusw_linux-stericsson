@@ -32,7 +32,7 @@ int st_accel_trig_set_state(struct iio_trigger *trig, bool state)
 
 static int st_accel_buffer_preenable(struct iio_dev *indio_dev)
 {
-	return st_sensors_set_enable(indio_dev, true);
+	return st_sensors_power_enable(indio_dev);
 }
 
 static int st_accel_buffer_postenable(struct iio_dev *indio_dev)
@@ -76,7 +76,7 @@ static int st_accel_buffer_predisable(struct iio_dev *indio_dev)
 	if (err < 0)
 		goto st_accel_buffer_predisable_error;
 
-	err = st_sensors_set_enable(indio_dev, false);
+	err = st_sensors_power_disable(indio_dev);
 
 st_accel_buffer_predisable_error:
 	kfree(adata->buffer_data);
