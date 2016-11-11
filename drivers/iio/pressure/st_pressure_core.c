@@ -572,7 +572,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
 	indio_dev->info = &press_info;
 	mutex_init(&press_data->tb.buf_lock);
 
-	err = st_sensors_power_enable(indio_dev);
+	err = st_sensors_power_init(indio_dev);
 	if (err)
 		return err;
 

@@ -228,7 +228,7 @@ int st_sensors_set_axis_enable(struct iio_dev *indio_dev, u8 axis_enable)
 }
 EXPORT_SYMBOL(st_sensors_set_axis_enable);
 
-int st_sensors_power_enable(struct iio_dev *indio_dev)
+int st_sensors_power_init(struct iio_dev *indio_dev)
 {
 	struct st_sensor_data *pdata = iio_priv(indio_dev);
 	int err;
@@ -265,7 +265,7 @@ st_sensors_disable_vdd:
 	regulator_disable(pdata->vdd);
 	return err;
 }
-EXPORT_SYMBOL(st_sensors_power_enable);
+EXPORT_SYMBOL(st_sensors_power_init);
 
 void st_sensors_power_disable(struct iio_dev *indio_dev)
 {

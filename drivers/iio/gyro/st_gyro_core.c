@@ -353,7 +353,7 @@ int st_gyro_common_probe(struct iio_dev *indio_dev)
 	indio_dev->info = &gyro_info;
 	mutex_init(&gdata->tb.buf_lock);
 
-	err = st_sensors_power_enable(indio_dev);
+	err = st_sensors_power_init(indio_dev);
 	if (err)
 		return err;
 
