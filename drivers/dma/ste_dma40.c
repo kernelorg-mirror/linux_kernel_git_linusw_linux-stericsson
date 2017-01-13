@@ -1473,6 +1473,12 @@ static dma_cookie_t d40_tx_submit(struct dma_async_tx_descriptor *tx)
 
 static int d40_start(struct d40_chan *d40c)
 {
+	if (d40c->dma_cfg.dev_type == 30 ||
+	    d40c->dma_cfg.dev_type == 31 ||
+	    d40c->dma_cfg.dev_type == 14) {
+		dev_info(chan2dev(d40c), "start channel device type %d\n",
+			 d40c->dma_cfg.dev_type);
+	}
 	return d40_channel_execute_command(d40c, D40_DMA_RUN);
 }
 
