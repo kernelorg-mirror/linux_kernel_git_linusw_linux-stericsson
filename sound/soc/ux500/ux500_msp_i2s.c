@@ -674,11 +674,10 @@ static int ux500_msp_i2s_of_init_msp(struct platform_device *pdev,
 }
 
 int ux500_msp_i2s_init_msp(struct platform_device *pdev,
-			struct ux500_msp **msp_p,
-			struct msp_i2s_platform_data *platform_data)
+			struct ux500_msp **msp_p)
 {
 	struct resource *res = NULL;
-	struct device_node *np = pdev->dev.of_node;
+	struct msp_i2s_platform_data *platform_data;
 	struct ux500_msp *msp;
 	int ret;
 
@@ -687,19 +686,9 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
 	if (!msp)
 		return -ENOMEM;
 
-	if (!platform_data) {
-		if (np) {
-			ret = ux500_msp_i2s_of_init_msp(pdev, msp,
-							&platform_data);
-			if (ret)
-				return ret;
-		} else
-			return -EINVAL;
-	} else {
-		msp->playback_dma_data.dma_cfg = platform_data->msp_i2s_dma_tx;
-		msp->capture_dma_data.dma_cfg = platform_data->msp_i2s_dma_rx;
-		msp->id = platform_data->id;
-	}
+	ret = ux500_msp_i2s_of_init_msp(pdev, msp, &platform_data);
+	if (ret)
+		return ret;
 
 	msp->dev = &pdev->dev;
 
@@ -729,7 +718,6 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
 void ux500_msp_i2s_cleanup_msp(struct platform_device *pdev,
 			struct ux500_msp *msp)
 {
-	dev_dbg(msp->dev, "%s: Enter (id = %d).\n", __func__, msp->id);
 }
 
 MODULE_LICENSE("GPL v2");
