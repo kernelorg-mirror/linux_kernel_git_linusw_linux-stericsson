@@ -18,6 +18,15 @@
 		reg = <0x00000000 0x20000000>;
 	};
 
+	sound {
+		compatible = "stericsson,snd-soc-mop500";
+		stericsson,card-name = "HREF500-audio";
+		stericsson,cpu-dai = <&msp1>, <&msp3>;
+		stericsson,audio-codec = <&codec>;
+		clocks = <&prcmu_clk PRCMU_SYSCLK>, <&ab8500_clock AB8500_SYSCLK_ULP>, <&ab8500_clock AB8500_SYSCLK_INT>;
+		clock-names = "sysclk", "ulpclk", "intclk";
+	};
+
 	soc {
 		uart@80120000 {
 			pinctrl-names = "default", "sleep";
