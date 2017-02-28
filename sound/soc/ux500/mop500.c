@@ -31,21 +31,14 @@ static struct snd_soc_dai_link mop500_dai_links[] = {
 	{
 		.name = "ab8500_0",
 		.stream_name = "ab8500_0",
-		.cpu_dai_name = "ux500-msp-i2s.1",
 		.codec_dai_name = "ab8500-codec-dai.0",
-		.platform_name = "ux500-msp-i2s.1",
-		.codec_name = "ab8500-codec.0",
 		.init = mop500_ab8500_machine_init,
 		.ops = mop500_ab8500_ops,
 	},
 	{
 		.name = "ab8500_1",
 		.stream_name = "ab8500_1",
-		.cpu_dai_name = "ux500-msp-i2s.3",
 		.codec_dai_name = "ab8500-codec-dai.1",
-		.platform_name = "ux500-msp-i2s.3",
-		.codec_name = "ab8500-codec.0",
-		.init = NULL,
 		.ops = mop500_ab8500_ops,
 	},
 };
@@ -103,29 +96,15 @@ static int mop500_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 	int ret;
 
-	dev_dbg(&pdev->dev, "%s: Enter.\n", __func__);
-
 	mop500_card.dev = &pdev->dev;
 
-	if (np) {
-		ret = mop500_of_probe(pdev, np);
-		if (ret)
-			return ret;
-	}
+	ret = mop500_of_probe(pdev, np);
+	if (ret)
+		return ret;
 
-	dev_dbg(&pdev->dev, "%s: Card %s: Set platform drvdata.\n",
-		__func__, mop500_card.name);
 	platform_set_drvdata(pdev, &mop500_card);
 
 	snd_soc_card_set_drvdata(&mop500_card, NULL);
-
-	dev_dbg(&pdev->dev, "%s: Card %s: num_links = %d\n",
-		__func__, mop500_card.name, mop500_card.num_links);
-	dev_dbg(&pdev->dev, "%s: Card %s: DAI-link 0: name = %s\n",
-		__func__, mop500_card.name, mop500_card.dai_link[0].name);
-	dev_dbg(&pdev->dev, "%s: Card %s: DAI-link 0: stream_name = %s\n",
-		__func__, mop500_card.name,
-		mop500_card.dai_link[0].stream_name);
 
 	ret = snd_soc_register_card(&mop500_card);
 	if (ret)
@@ -138,8 +117,6 @@ static int mop500_probe(struct platform_device *pdev)
 static int mop500_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *mop500_card = platform_get_drvdata(pdev);
-
-	pr_debug("%s: Enter.\n", __func__);
 
 	snd_soc_unregister_card(mop500_card);
 	mop500_ab8500_remove(mop500_card);
