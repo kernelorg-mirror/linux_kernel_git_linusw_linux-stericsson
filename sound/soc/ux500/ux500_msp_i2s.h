@@ -16,7 +16,6 @@
 #define UX500_MSP_I2S_H
 
 #include <linux/platform_device.h>
-#include <linux/platform_data/asoc-ux500-msp.h>
 
 #define MSP_INPUT_FREQ_APB 48000000
 
@@ -486,7 +485,6 @@ struct ux500_msp {
 	unsigned int f_bitclk;
 };
 
-struct msp_i2s_platform_data;
 int ux500_msp_i2s_init_msp(struct platform_device *pdev,
 			   struct ux500_msp **msp_p);
 void ux500_msp_i2s_cleanup_msp(struct platform_device *pdev,
