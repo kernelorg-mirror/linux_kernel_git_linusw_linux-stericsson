@@ -3029,6 +3029,7 @@ int soc_new_pcm(struct snd_soc_pcm_runtime *rtd, int num)
 				(rtd->num_codecs > 1) ?
 				"multicodec" : rtd->codec_dai->name, num);
 
+		dev_info(rtd->card->dev, "call snd_pcm_new(%d) \"%s\" playback=%d, capture=%d\n", num, new_name, playback, capture);
 		ret = snd_pcm_new(rtd->card->snd_card, new_name, num, playback,
 			capture, &pcm);
 	}

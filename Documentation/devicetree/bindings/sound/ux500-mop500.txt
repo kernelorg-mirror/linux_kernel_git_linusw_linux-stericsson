@@ -6,8 +6,6 @@ Required properties:
  - compatible              : "stericsson,snd-soc-mop500"
 
 Non-standard properties:
- - stericsson,cpu-dai      : Phandle to the CPU-side DAI
- - stericsson,audio-codec  : Phandle to the Audio CODEC
  - stericsson,card-name    : Over-ride default card name
 
 Example:
@@ -15,8 +13,24 @@ Example:
 	sound {
 		compatible = "stericsson,snd-soc-mop500";
 
-		stericsson,cpu-dai = <&msp1 &msp3>;
-		stericsson,audio-codec = <&codec>;
+		ab8500-codec-playback-dai-link@0 {
+			link-name = "AB8500 codec playback";
+			cpu {
+				sound-dai = <&msp1>;
+			};
+			codec {
+				sound-dai = <&codec>;
+			};
+		};
+		ab8500-codec-record-dai-link@0 {
+			link-name = "AB8500 codec record";
+			cpu {
+				sound-dai = <&msp3>;
+			};
+			codec {
+				sound-dai = <&codec>;
+			};
+		};
 	};
 
 	msp1: msp@80124000 {

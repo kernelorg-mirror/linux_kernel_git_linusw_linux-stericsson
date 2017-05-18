@@ -46,80 +46,10 @@ static const struct snd_pcm_hardware ux500_pcm_hw = {
 	.periods_max = UX500_PLATFORM_PERIODS_MAX,
 };
 
-static struct dma_chan *ux500_pcm_request_chan(struct snd_soc_pcm_runtime *rtd,
-	struct snd_pcm_substream *substream)
-{
-	struct snd_soc_dai *dai = rtd->cpu_dai;
-	u16 per_data_width, mem_data_width;
-	struct stedma40_chan_cfg *dma_cfg;
-	struct ux500_msp_dma_params *dma_params;
-
-	dma_params = snd_soc_dai_get_dma_data(dai, substream);
-	dma_cfg = dma_params->dma_cfg;
-
-	mem_data_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-
-	switch (dma_params->data_size) {
-	case 32:
-		per_data_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-		break;
-	case 16:
-		per_data_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-		break;
-	case 8:
-		per_data_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-		break;
-	default:
-		per_data_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-	}
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		dma_cfg->src_info.data_width = mem_data_width;
-		dma_cfg->dst_info.data_width = per_data_width;
-	} else {
-		dma_cfg->src_info.data_width = per_data_width;
-		dma_cfg->dst_info.data_width = mem_data_width;
-	}
-
-	return snd_dmaengine_pcm_request_channel(stedma40_filter, dma_cfg);
-}
-
-static int ux500_pcm_prepare_slave_config(struct snd_pcm_substream *substream,
-		struct snd_pcm_hw_params *params,
-		struct dma_slave_config *slave_config)
-{
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_dmaengine_dai_dma_data *snd_dma_params;
-	dma_addr_t dma_addr;
-	int ret;
-
-	snd_dma_params =
-		snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
-	dma_addr = snd_dma_params->addr;
-
-	ret = snd_hwparams_to_dma_slave_config(substream, params, slave_config);
-	if (ret)
-		return ret;
-
-	slave_config->dst_maxburst = 4;
-	slave_config->src_maxburst = 4;
-
-	slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-	slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		slave_config->dst_addr = dma_addr;
-	else
-		slave_config->src_addr = dma_addr;
-
-	return 0;
-}
-
 static const struct snd_dmaengine_pcm_config ux500_dmaengine_of_pcm_config = {
-	.pcm_hardware = &ux500_pcm_hw, /* FIXME: from devicetree?? */
-	.prealloc_buffer_size = 128 * 1024, /* FIXME: from devicetree ?? */
-	.compat_request_channel = ux500_pcm_request_chan,
-	.prepare_slave_config = ux500_pcm_prepare_slave_config,
+	.pcm_hardware = &ux500_pcm_hw,
+	.prepare_slave_config = snd_dmaengine_pcm_prepare_slave_config,
+	.prealloc_buffer_size = UX500_PLATFORM_BUFFER_BYTES_MAX,
 };
 
 int ux500_pcm_register_platform(struct platform_device *pdev)
