@@ -286,13 +286,18 @@ static int dmaengine_pcm_new(struct snd_soc_pcm_runtime *rtd)
 		dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
 
 		if (!pcm->chan[i] &&
-		    (pcm->flags & SND_DMAENGINE_PCM_FLAG_CUSTOM_CHANNEL_NAME))
+		    (pcm->flags & SND_DMAENGINE_PCM_FLAG_CUSTOM_CHANNEL_NAME)) {
 			pcm->chan[i] = dma_request_slave_channel(dev,
 				dma_data->chan_name);
+			dev_info(rtd->platform->dev,
+				 "Requested custom channel name %s for stream: %d\n", dma_data->chan_name, i);
+		}
 
 		if (!pcm->chan[i] && (pcm->flags & SND_DMAENGINE_PCM_FLAG_COMPAT)) {
 			pcm->chan[i] = dmaengine_pcm_compat_request_channel(rtd,
 				substream);
+			dev_info(rtd->platform->dev,
+				 "Requested compat channel for stream: %d\n", i);
 		}
 
 		if (!pcm->chan[i]) {
@@ -311,6 +316,8 @@ static int dmaengine_pcm_new(struct snd_soc_pcm_runtime *rtd)
 
 		if (!dmaengine_pcm_can_report_residue(dev, pcm->chan[i]))
 			pcm->flags |= SND_DMAENGINE_PCM_FLAG_NO_RESIDUE;
+		dev_info(rtd->platform->dev,
+			 "OK requested dma channel for stream: %d\n", i);
 	}
 
 	return 0;
@@ -363,6 +370,8 @@ static int dmaengine_pcm_request_chan_of(struct dmaengine_pcm *pcm,
 	    !dev->of_node)
 		return 0;
 
+	dev_info(dev, "%s ENTER\n", __func__);
+
 	if (config && config->dma_dev) {
 		/*
 		 * If this warning is seen, it probably means that your Linux
@@ -388,8 +397,10 @@ static int dmaengine_pcm_request_chan_of(struct dmaengine_pcm *pcm,
 			if (PTR_ERR(chan) == -EPROBE_DEFER)
 				return -EPROBE_DEFER;
 			pcm->chan[i] = NULL;
+			dev_info(dev, "%s NULL channel %d name \"%s\"\n", __func__, i, name);
 		} else {
 			pcm->chan[i] = chan;
+			dev_info(dev, "%s OK got channel %d name \"%s\"\n", __func__, i, name);
 		}
 		if (pcm->flags & SND_DMAENGINE_PCM_FLAG_HALF_DUPLEX)
 			break;
@@ -398,21 +409,28 @@ static int dmaengine_pcm_request_chan_of(struct dmaengine_pcm *pcm,
 	if (pcm->flags & SND_DMAENGINE_PCM_FLAG_HALF_DUPLEX)
 		pcm->chan[1] = pcm->chan[0];
 
+	dev_info(dev, "%s EXIT OK\n", __func__);
+
 	return 0;
 }
 
-static void dmaengine_pcm_release_chan(struct dmaengine_pcm *pcm)
+static void dmaengine_pcm_release_chan(struct device *dev, struct dmaengine_pcm *pcm)
 {
 	unsigned int i;
+
+	dev_info(dev, "%s ENTER\n", __func__);
 
 	for (i = SNDRV_PCM_STREAM_PLAYBACK; i <= SNDRV_PCM_STREAM_CAPTURE;
 	     i++) {
 		if (!pcm->chan[i])
 			continue;
 		dma_release_channel(pcm->chan[i]);
+		dev_info(dev, "%s release channel %d\n", __func__, i);
 		if (pcm->flags & SND_DMAENGINE_PCM_FLAG_HALF_DUPLEX)
 			break;
 	}
+
+	dev_info(dev, "%s EXIT OK\n", __func__);
 }
 
 /**
@@ -426,6 +444,8 @@ int snd_dmaengine_pcm_register(struct device *dev,
 {
 	struct dmaengine_pcm *pcm;
 	int ret;
+
+	dev_info(dev, "%s ENTER\n", __func__);
 
 	pcm = kzalloc(sizeof(*pcm), GFP_KERNEL);
 	if (!pcm)
@@ -443,10 +463,12 @@ int snd_dmaengine_pcm_register(struct device *dev,
 	if (ret)
 		goto err_free_dma;
 
+	dev_info(dev, "%s EXIT OK\n", __func__);
+
 	return 0;
 
 err_free_dma:
-	dmaengine_pcm_release_chan(pcm);
+	dmaengine_pcm_release_chan(dev, pcm);
 	kfree(pcm);
 	return ret;
 }
@@ -464,6 +486,8 @@ void snd_dmaengine_pcm_unregister(struct device *dev)
 	struct snd_soc_platform *platform;
 	struct dmaengine_pcm *pcm;
 
+	dev_info(dev, "%s ENTER\n", __func__);
+
 	platform = snd_soc_lookup_platform(dev);
 	if (!platform)
 		return;
@@ -471,8 +495,9 @@ void snd_dmaengine_pcm_unregister(struct device *dev)
 	pcm = soc_platform_to_pcm(platform);
 
 	snd_soc_remove_platform(platform);
-	dmaengine_pcm_release_chan(pcm);
+	dmaengine_pcm_release_chan(dev, pcm);
 	kfree(pcm);
+	dev_info(dev, "%s EXIT OK\n", __func__);
 }
 EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_unregister);
 
