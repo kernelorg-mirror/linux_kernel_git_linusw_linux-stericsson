@@ -73,6 +73,26 @@ static int s6d16d0_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
+static int s6d16d0_read_mtp_id(struct s6d16d0 *s6)
+{
+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(s6->dev);
+	u8 id[3];
+	int ret;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(id); i++) {
+		ret = mipi_dsi_dcs_read(dsi, 0xd1 + i, &id[i], 1);
+		if (ret < 0) {
+			DRM_DEV_ERROR(s6->dev, "failed to read MTP ID\n");
+			return ret;
+		}
+	}
+	DRM_DEV_INFO(s6->dev, "MTP 0x%02x, version: 0x%02x, ID: 0x%02x\n",
+		     id[0], id[1], id[2]);
+
+	return 0;
+}
+
 static int s6d16d0_prepare(struct drm_panel *panel)
 {
 	struct s6d16d0 *s6 = panel_to_s6d16d0(panel);
@@ -91,6 +111,8 @@ static int s6d16d0_prepare(struct drm_panel *panel)
 	/* De-assert RESET */
 	gpiod_set_value_cansleep(s6->reset_gpio, 0);
 	msleep(120);
+
+	s6d16d0_read_mtp_id(s6);
 
 	/* Enabe tearing mode: send TE (tearing effect) at VBLANK */
 	ret = mipi_dsi_dcs_set_tear_on(dsi,
