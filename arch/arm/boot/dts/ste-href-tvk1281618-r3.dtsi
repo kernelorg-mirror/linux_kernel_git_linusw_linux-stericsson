@@ -51,6 +51,7 @@
 					reg = <0>;
 					vddi-supply = <&ab8500_ldo_aux1_reg>;
 					reset-gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
+					enforce-video-mode;
 				};
 			};
 		};
