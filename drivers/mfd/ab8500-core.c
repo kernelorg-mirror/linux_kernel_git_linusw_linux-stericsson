@@ -476,6 +476,8 @@ static int ab8500_handle_hierarchical_line(struct ab8500 *ab8500,
 	latch_val &= ~ab8500->mask[i];
 
 	while (latch_val) {
+		int irq;
+
 		int_bit = __ffs(latch_val);
 		line = (i << 3) + int_bit;
 		latch_val &= ~(1 << int_bit);
@@ -493,7 +495,7 @@ static int ab8500_handle_hierarchical_line(struct ab8500 *ab8500,
 		if (line == AB8540_INT_GPIO43F || line == AB8540_INT_GPIO44F)
 			line += 1;
 
-		handle_nested_irq(irq_create_mapping(ab8500->domain, line));
+		handle_nested_irq(irq_find_mapping(ab8500->domain, line));
 	}
 
 	return 0;
@@ -553,26 +555,39 @@ static irqreturn_t ab8500_hierarchical_irq(int irq, void *dev)
 	return IRQ_HANDLED;
 }
 
-static int ab8500_irq_map(struct irq_domain *d, unsigned int virq,
-				irq_hw_number_t hwirq)
+static void ab8500_irq_domain_map(struct ab8500 *ab8500,
+				  struct irq_domain *d, unsigned int irq,
+				  irq_hw_number_t hwirq, unsigned int type)
 {
-	struct ab8500 *ab8500 = d->host_data;
-
-	if (!ab8500)
-		return -EINVAL;
-
-	irq_set_chip_data(virq, ab8500);
-	irq_set_chip_and_handler(virq, &ab8500_irq_chip,
-				handle_simple_irq);
-	irq_set_nested_thread(virq, 1);
-	irq_set_noprobe(virq);
-
-	return 0;
+	irq_domain_set_info(d, irq, hwirq, &ab8500_irq_chip,
+			    ab8500, handle_simple_irq, NULL, NULL);
+	irq_set_noprobe(irq);
 }
 
+static int ab8500_irq_domain_alloc(struct irq_domain *d, unsigned int irq,
+				   unsigned int nr_irqs, void *data)
+{
+	struct ab8500 *ab8500 = d->host_data;
+	struct irq_fwspec *fwspec = data;
+	irq_hw_number_t hwirq;
+	unsigned int type;
+	int ret, i;
+
+	ret = irq_domain_translate_twocell(d, fwspec, &hwirq, &type);
+	if (ret)
+		return ret;
+
+	for (i = 0; i < nr_irqs; i++)
+		ab8500_irq_domain_map(ab8500, d, irq + i, hwirq + i, type);
+
+        return 0;
+ }
+
+/* We are using a hierarchical irqdomain here */
 static const struct irq_domain_ops ab8500_irq_ops = {
-	.map    = ab8500_irq_map,
-	.xlate  = irq_domain_xlate_twocell,
+	.alloc = ab8500_irq_domain_alloc,
+	.free = irq_domain_free_irqs_common,
+	.translate = irq_domain_translate_twocell,
 };
 
 static int ab8500_irq_init(struct ab8500 *ab8500, struct device_node *np)
@@ -589,8 +604,7 @@ static int ab8500_irq_init(struct ab8500 *ab8500, struct device_node *np)
 		num_irqs = AB8500_NR_IRQS;
 
 	/* If ->irq_base is zero this will give a linear mapping */
-	ab8500->domain = irq_domain_add_simple(ab8500->dev->of_node,
-					       num_irqs, 0,
+	ab8500->domain = irq_domain_add_linear(np, num_irqs,
 					       &ab8500_irq_ops, ab8500);
 
 	if (!ab8500->domain) {
@@ -1215,6 +1229,7 @@ static int ab8500_probe(struct platform_device *pdev)
 			"ab8500", ab8500);
 	if (ret)
 		return ret;
+	irq_set_irq_wake(ab8500->irq, 1);
 
 	if (is_ab9540(ab8500))
 		ret = mfd_add_devices(ab8500->dev, 0, ab9540_devs,
